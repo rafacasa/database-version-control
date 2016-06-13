@@ -4,6 +4,7 @@ import dao.DAO;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Comparator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,16 +16,16 @@ import utils.DvsException;
  * @version 10/06/2016
  */
 public class Dvs {
-    
+
     private static final Logger LOGGER = LogManager.getLogger(main.Dvs.class);
     private final Path SqlFolder;
     private final DAO dao;
-    
+
     public Dvs(Path SqlFolder, DAO dao) {
         this.SqlFolder = SqlFolder;
         this.dao = dao;
     }
-    
+
     public void verifyVersion() throws DvsException {
         LOGGER.debug("enter in verifyVersion()");
         int version = this.dao.getVersion();
@@ -41,7 +42,7 @@ public class Dvs {
             LOGGER.debug("database is up to date");
         }
     }
-    
+
     private int getLastVersion() throws DvsException {
         LOGGER.debug("enter in getLastVersion()");
         try {
@@ -56,7 +57,7 @@ public class Dvs {
             throw new DvsException(ex);
         }
     }
-    
+
     private int getVersionFromFilename(String path) {
         LOGGER.debug("enter in getVersionFromFilename()");
         String[] array = path.split("\\\\");
@@ -66,13 +67,14 @@ public class Dvs {
         LOGGER.debug("Retorno: " + target);
         return Integer.parseInt(target);
     }
-    
+
     private Path getFilenameFromVersion(int version) {
         LOGGER.debug("enter in getFilenameFromVersion()");
         String filename = version + ".sql";
-        
+        LOGGER.debug("SqlFolder.toString() + filename: " + this.SqlFolder.toString() + "\\" + filename);
+        return Paths.get(this.SqlFolder.toString() + "\\" + filename);
     }
-    
+
     private void updateDatabase(int version) throws DvsException {
         Path fileToUpdateServer = this.getFilenameFromVersion(version);
         this.dao.executeSQLFile(fileToUpdateServer);

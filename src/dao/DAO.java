@@ -9,26 +9,30 @@ import utils.DvsException;
  * the Connection Data to use in the program.
  *
  * @author Rafael Casa
- * @version 11/06/2016
+ * @version 13/06/2016
  */
 public interface DAO {
 
     /**
      * Makes the JBDC's String of the connection data from this DAO.
      *
+     * @param withDatabaseSet whes set true, the JDBC's String has the database
+     * name.
      * @return the JBDC's String
      */
-    public String getStringJBDC();
+    public String getStringJBDC(boolean withDatabaseSet);
 
     /**
      * Makes a {@link java.sql.Connection} with the connection data from this
      * DAO.
      *
+     * @param withDatabaseSet when set true, the Connection is made from a
+     * JDBC's String with Database name.
      * @return A Connection
      * @throws utils.DvsException when there is an error in the connection with
      * the database.
      */
-    public java.sql.Connection getConnection() throws DvsException;
+    public java.sql.Connection getConnection(boolean withDatabaseSet) throws DvsException;
 
     /**
      * Gets the version of the database running on the connection data of this

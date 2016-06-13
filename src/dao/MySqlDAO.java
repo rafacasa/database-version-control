@@ -27,18 +27,26 @@ public class MySqlDAO implements DAO {
 
     public MySqlDAO(ConnectionData connectionData) {
         this.connectionData = connectionData;
-        this.select = "SELECT version FROM DATABASE_INFO";
+        this.select = "SELECT version FROM database_info";
     }
 
     public MySqlDAO(String databaseName, String ip, String port, String user, String password) {
         this.connectionData = new ConnectionData(databaseName, ip, port, user, password);
-        this.select = "SELECT version FROM DATABASE_INFO";
+        this.select = "SELECT version FROM database_info";
     }
 
     @Override
     public int getVersion() throws DvsException {
         LOGGER.debug("enter in getVerion()");
-        Connection connection = this.getConnection();
+        Connection connection = null;
+        try {
+            connection = this.getConnection(true);
+        } catch (DvsException ex) {
+            LOGGER.debug("Database doesn't exist: " + ex.getMessage().contains("Unknown database"));
+            if (ex.getMessage().contains("Unknown database")) {
+                return 0;
+            }
+        }
         try {
             PreparedStatement statement = connection.prepareStatement(this.select);
             ResultSet result = statement.executeQuery();
@@ -69,7 +77,6 @@ public class MySqlDAO implements DAO {
     @Override
     public void executeSQLFile(Path fileToExecute) throws DvsException {
         LOGGER.debug("enter in executeSQLFile()");
-        Connection conn = null;
         String delimiter = ";";
         Scanner scanner;
         try {
@@ -79,39 +86,42 @@ public class MySqlDAO implements DAO {
             throw new DvsException(ex);
         }
         Statement currentStatement;
-        while (scanner.hasNext()) {
-            conn = this.getConnection();
-            String rawStatement = scanner.next() + delimiter;
-            LOGGER.debug("RAW STATEMENT: " + rawStatement);
-            try {
+        Connection conn = this.getConnection(false);
+        try {
+            while (scanner.hasNext()) {
+                String rawStatement = scanner.next() + delimiter;
+                LOGGER.debug("RAW STATEMENT: " + rawStatement);
                 currentStatement = conn.createStatement();
                 currentStatement.execute(rawStatement);
-            } catch (SQLException ex) {
-                LOGGER.error("Exception catched at line 89: " + ex);
-                throw new DvsException(ex);
-            } finally {
-                if (conn != null) {
-                    try {
-                        conn.close();
-                    } catch (SQLException ex) {
-                        LOGGER.error("Exception catched at line 96: " + ex);
-                        throw new DvsException(ex);
-                    }
+            }
+        } catch (SQLException ex) {
+            LOGGER.error("Exception catched at line 89: " + ex);
+            throw new DvsException(ex);
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (SQLException ex) {
+                    LOGGER.error("Exception catched at line 96: " + ex);
+                    throw new DvsException(ex);
                 }
-                currentStatement = null;
             }
         }
     }
 
     @Override
-    public String getStringJBDC() {
-        return "jdbc:mysql://" + this.connectionData.getIp() + ":" + this.connectionData.getPort() + "/" + this.connectionData.getDatabaseName();
+    public String getStringJBDC(boolean withDatabaseSet) {
+        if (withDatabaseSet) {
+            return "jdbc:mysql://" + this.connectionData.getIp() + ":" + this.connectionData.getPort() + "/" + this.connectionData.getDatabaseName();
+        } else {
+            return "jdbc:mysql://" + this.connectionData.getIp() + ":" + this.connectionData.getPort();
+        }
     }
 
     @Override
-    public Connection getConnection() throws DvsException {
+    public Connection getConnection(boolean withDatabaseSet) throws DvsException {
         try {
-            return DriverManager.getConnection(this.getStringJBDC(), this.connectionData.getUser(), this.connectionData.getPassword());
+            return DriverManager.getConnection(this.getStringJBDC(withDatabaseSet), this.connectionData.getUser(), this.connectionData.getPassword());
         } catch (SQLException ex) {
             LOGGER.error("Exception catched at line 80: " + ex);
             throw new DvsException(ex);
