@@ -15,31 +15,35 @@ import utils.DvsException;
  * @version 10/06/2016
  */
 public class Dvs {
-
-    private static final Logger logger = LogManager.getLogger(main.Dvs.class);
+    
+    private static final Logger LOGGER = LogManager.getLogger(main.Dvs.class);
     private final Path SqlFolder;
     private final DAO dao;
-
+    
     public Dvs(Path SqlFolder, DAO dao) {
         this.SqlFolder = SqlFolder;
         this.dao = dao;
     }
-
+    
     public void verifyVersion() throws DvsException {
-        logger.debug("entrou em verifyVersion()");
+        LOGGER.debug("enter in verifyVersion()");
         int version = this.dao.getVersion();
         int lastVersion = this.getLastVersion();
-        if(version < lastVersion) {
-            logger.debug("database needs to be updated");
+        if (version < lastVersion) {
+            LOGGER.debug("database needs to be updated");
+            for (int i = version + 1; i <= lastVersion; i++) {
+                LOGGER.debug("database will be updated to version: " + i);
+                this.updateDatabase(i);
+            }
         } else if (version > lastVersion) {
             throw new DvsException("Database version is newer than the newer file");
         } else {
-            logger.debug("database is up to date");
+            LOGGER.debug("database is up to date");
         }
     }
-
+    
     private int getLastVersion() throws DvsException {
-        logger.debug("entrou no metodo getLastVersion()");
+        LOGGER.debug("enter in getLastVersion()");
         try {
             return Files.list(this.SqlFolder)
                     .filter(p -> p.toString().matches("[\\s\\S]*\\\\\\d+.sql"))
@@ -47,19 +51,30 @@ public class Dvs {
                     .map(p -> this.getVersionFromFilename(p.toString()))
                     .orElseThrow(DvsException::new);
         } catch (IOException ex) {
-            logger.catching(ex);
-            logger.debug(ex);
+            LOGGER.catching(ex);
+            LOGGER.debug("Exception in getLastVersion: " + ex);
             throw new DvsException(ex);
         }
     }
-
+    
     private int getVersionFromFilename(String path) {
+        LOGGER.debug("enter in getVersionFromFilename()");
         String[] array = path.split("\\\\");
-        logger.debug(array);
         String filename = array[array.length - 1];
-        logger.debug(filename);
+        LOGGER.debug("Filename: " + filename);
         String target = filename.split("\\.")[0];
-        logger.debug(target);
+        LOGGER.debug("Retorno: " + target);
         return Integer.parseInt(target);
+    }
+    
+    private Path getFilenameFromVersion(int version) {
+        LOGGER.debug("enter in getFilenameFromVersion()");
+        String filename = version + ".sql";
+        
+    }
+    
+    private void updateDatabase(int version) throws DvsException {
+        Path fileToUpdateServer = this.getFilenameFromVersion(version);
+        this.dao.executeSQLFile(fileToUpdateServer);
     }
 }
