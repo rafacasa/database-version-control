@@ -15,6 +15,7 @@ import org.apache.logging.log4j.Logger;
 import utils.DvsException;
 
 /**
+ * The implementation of {@link dao.DAO} to MySql.
  *
  * @author Rafael Casa
  * @version 10/06/2016
